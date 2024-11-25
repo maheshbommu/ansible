@@ -1,0 +1,23 @@
+---
+name: deploy carvila into nginx
+become: yes
+hosts: all
+    - name: update and install nginx
+      ansible.builtin.apt:
+        name: 
+            - nginx
+            - unzip
+        update_cache: yes
+        state: present
+    - name: download website
+      ansible.builitin.get_url:
+        url: https://www.free-css.com/assets/files/free-css-templates/download/page296/carvilla.zip
+        dest: /tmp/carvilla.zip
+    - name: unzip the website
+      ansible.builtin.unarchive:
+        src: /tmp/carvilla.zip
+        dest: /var/www/html
+        remote_src: yes
+    - name: rename the directory
+      ansible.builtin.command:
+        cmd: mv /var/www/html/carvilla-v1.0/ /var/www/html/mass

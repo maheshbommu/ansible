@@ -1,0 +1,81 @@
+---
+- name: Install Apache Tomcat 10 on Ubuntu
+  hosts: all
+  become: true
+  tasks:
+    - name: Update the system packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install Java Development Kit (JDK)
+      apt:
+        name: default-jdk
+        state: present
+
+    - name: Create a Tomcat user
+      user:
+        name: tomcat
+        shell: /bin/false
+        home: /opt/tomcat
+
+    - name: Create Tomcat group
+      group:
+        name: tomcat
+
+    - name: Create Tomcat directory
+      file:
+        path: /opt/tomcat
+        owner: tomcat
+        group: tomcat
+        mode: '0755'
+        state: directory
+
+    - name: Download Tomcat tar.gz file
+      get_url:
+        url: https://archive.apache.org/dist/tomcat/tomcat-10/v10.0.20/bin/apache-tomcat-10.0.20.tar.gz
+        dest: /tmp/apache-tomcat-10.0.20.tar.gz
+
+    - name: Extract Tomcat archive
+      unarchive:
+        src: /tmp/apache-tomcat-10.0.20.tar.gz
+        dest: /opt/tomcat/
+        remote_src: yes
+
+    - name: Set permissions for Tomcat directory
+      file:
+        path: /opt/tomcat/apache-tomcat-10.0.20
+        owner: tomcat
+        group: tomcat
+        recurse: yes
+
+    - name: Change ownership of specific directories to root for security
+      command:
+        cmd: chown -R root:tomcat /opt/tomcat/apache-tomcat-10.0.20/bin /opt/tomcat/apache-tomcat-10.0.20/lib
+
+    - name: Create a systemd service file for Tomcat
+      copy:
+        dest: /etc/systemd/system/tomcat.service
+        content: |
+          [Unit]
+          Description=Apache Tomcat Web Application Container
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=tomcat
+          Group=tomcat
+          Environment=JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+          Environment=CATALINA_HOME=/opt/tomcat/apache-tomcat-10.0.20
+          Environment=CATALINA_PID=/opt/tomcat/apache-tomcat-10.0.20/temp/tomcat.pid
+          ExecStart=/opt/tomcat/apache-tomcat-10.0.20/bin/startup.sh
+          ExecStop=/opt/tomcat/apache-tomcat-10.0.20/bin/shutdown.sh
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Start and enable Tomcat service
+      systemd:
+        name: tomcat.service
+        enabled: yes
+        state: started

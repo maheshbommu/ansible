@@ -1,0 +1,24 @@
+---
+name: deploy woody into nginx
+become: yes
+hosts: all
+tasks:
+  - name: update and install nginx
+    ansible.builtin.apt:
+      name:
+        - nginx
+        - unzip
+      update_cache: yes
+      state: present
+  - name: download the template
+    ansible.builtin.get_url:
+      url: https://www.free-css.com/assets/files/free-css-templates/download/page294/woody.zip
+      dest: /tmp/woody.zip
+  - name: unzip the website
+    ansible.builtin.unarchive:
+      src: /tmp/woody.zip
+      dest: /var/www/html
+      remote_src: yes
+  - name: rename the website
+    ansible.builtin.command: 
+      cmd: mv /var/www/html/carpenter-website-template/ /var/www/html/woody
